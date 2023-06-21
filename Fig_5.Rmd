@@ -1,0 +1,93 @@
+---
+title: "Fig_5"
+author: "Cong Wang"
+date: "2023-06-20"
+output: html_document
+---
+
+```{r fig.height=7, fig.width=22}
+rm(list = ls())
+load("data/CForBio.data.prep.2022.11.22.RData")
+library(readxl)
+library(psych)
+library(tidyr)
+library(ggplot2)
+library(vegan)
+library(colorRamps)
+library(ggrepel)
+library(grid)
+
+
+ko.ID.sub<-read_excel("data/KEGG.123.2022.12.09.xlsx",sheet = "biogeochemcycle")
+ko.ID.sub <- merge(ko.ID.sub, ko.mgm.ID0, by.x = "KO", by.y = "Category", all = F)
+ko.mgm1$KO <- row.names(ko.mgm1)
+ko.mgm.sub0 <- merge(ko.ID.sub,ko.mgm1, by = "KO", all = T )
+ko.mgm.sub0 <- ko.mgm.sub0[!is.na(ko.mgm.sub0$Level1),]
+ko.mgm.sub0 <- ko.mgm.sub0[ order(ko.mgm.sub0$No),]
+row.names(ko.mgm.sub0) <- paste0(ko.mgm.sub0$KO,"_", ko.mgm.sub0$No, "_", ko.mgm.sub0$Level1, "_", ko.mgm.sub0$Level2 , "_", ko.mgm.sub0$Level3)
+
+ko.sel <-ko.mgm.sub0[, c(-1:-6)]
+ko.sel.ID <- ko.mgm.sub0[, c(1:6)]
+colnames(ko.sel) == env.amp1$sample_name
+
+
+env.tmp1<-env.amp1[,c("latitude","longitude","altitude","MAP","MAT",
+                      "TC","TN","TP","pH","ACa","AMg","AFe","AK","C_N","C_P", "N_P", "soil_D",
+                      "AllP_abu","AllP_bsa","AllP_rich")]
+
+env.tmp2 <- data.frame(t(ko.sel))
+
+spman.d12 = corr.test(env.tmp1, env.tmp2,use="pairwise",method="spearman",adjust="fdr",alpha=.05,ci=FALSE)
+
+
+r<-data.frame(spman.d12$r)
+r[is.na(r)] <-0
+r$X<-row.names(r)
+
+r.long <- gather(r, Y, r, 1 : ncol(r)-1,  factor_key=TRUE)
+p<-data.frame(spman.d12$p)
+p$X<-row.names(p)
+p.long <- gather(p, Y, p, 1 : ncol(p)-1, factor_key=TRUE)
+cor.out<-cbind(r.long,p.long$p)
+cor.out$r <- round(as.numeric(cor.out$r), 2)
+str(cor.out$r)
+
+cor.out$X<- factor(cor.out$X, 
+                   levels = c("latitude","longitude","altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe",
+                              "AK","C_N","C_P", "N_P", "soil_D","AllP_abu","AllP_bsa","AllP_rich"))
+
+cor.out$X<- factor(cor.out$X, 
+                   labels = c("Latitude","Longitude","Altitude","Mean annual precipitation","Mean annual temperature",
+                              "Total Carbon","Soil total Nitrogen","Soil total Phosphorus","Soil pH","Soil available Calcium",
+                              "Soil available Magnesium", "Soil available Ferrum", "Soil available Potassium", "Carbon : Nitrogen ratio", "Carbon : Phosphorus ratio", "Nitrogen: Phosphorus ratio", 
+                              "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness"))
+
+library(splitstackshape)
+
+cor.out<-cSplit(cor.out, "Y", "_")
+
+cor.out$Y_4 <- factor(cor.out$Y_4, levels = c("Carbon.cycle","Nitrogen.cycle","Sulfur.cycle","Iron.cycle","Phosphorus.cycle"))
+
+cor.out$Y_4 <- factor(cor.out$Y_4, labels  = c("Carbon.cycle","Nitrogen.cycle","Sulfur.cycle","Iron.cycle","Phosphorus.cycle"  ))
+
+cor.out.sig <-cor.out
+cor.out.sig$r[cor.out.sig$p > 0.05] <- 0
+
+ggplot(cor.out.sig, aes(Y_5,X)) +
+  facet_grid(.~ Y_4,  scales = "free", space = "free" )+ 
+  geom_tile(aes(fill = r), size=1)+
+  geom_text(data=  cor.out.sig[cor.out.sig$r!=0,], aes(label = r), size = 2, font="bold")+
+  scale_fill_gradient(guide = "legend", high='green', low='blue',name="rho")+
+  geom_hline(yintercept = c(8.5,9.5), color = "red")+
+  theme(strip.text = element_text(size = 12,face="bold", color = c("white")),
+        strip.background = element_rect(fill = "blue"),
+        panel.spacing = unit(0.1, "lines"),
+        axis.title= element_blank(),
+        axis.text.x=element_text(colour="black", size=10, face="bold",angle = 90,hjust = 1,vjust = 0.5),
+        axis.text.y=element_text(colour="black", size=12, face="bold"))
+
+
+```
+
+## R Markdown
+

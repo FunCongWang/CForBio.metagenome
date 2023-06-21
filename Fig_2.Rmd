@@ -1,0 +1,137 @@
+---
+title: "Fig_2"
+author: "Cong Wang"
+date: "2023-06-20"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(vegan)
+library(colorRamps)
+library(psych)
+library(tidyr)
+library(readxl)
+
+rm(list = ls())
+load("data/CForBio.data.prep.2022.11.22.RData")
+
+library(vegan)
+cutoff <- 1000
+
+sort(colSums(bac.amp1))
+sort(colSums(bac.mgm1))
+sort(colSums(ko.mgm1))
+sort(colSums(cog.mgm1))
+sort(colSums(rgi.mgm1))
+sort(colSums(cazy.mgm1))
+
+bac.amp <- rrarefy(t(bac.amp1),sample = 24903 )
+bac.mgm <- data.frame(t(bac.mgm1))
+
+ko.mgm <- data.frame(t(ko.mgm1))
+cog.mgm <- data.frame(t(cog.mgm1))
+rgi.mgm <- data.frame(t(rgi.mgm1))
+cazy.mgm <- data.frame(t(cazy.mgm1))
+
+env.amp1$rgi.mgm.H <- vegan::diversity(rgi.mgm)
+env.amp1$cazy.mgm.H <- vegan::diversity(cazy.mgm)
+env.amp1$ko.mgm.H <- vegan::diversity(ko.mgm)
+env.amp1$cog.mgm.H <- vegan::diversity(cog.mgm)
+env.amp1$bac.mgm.H <- vegan::diversity(bac.mgm)
+env.amp1$bac.amp.H <- vegan::diversity(bac.amp)
+
+env.amp1$rgi.mgm.S <- vegan::specnumber(rgi.mgm)
+env.amp1$cazy.mgm.S <- vegan::specnumber(cazy.mgm)
+env.amp1$ko.mgm.S <- vegan::specnumber(ko.mgm)
+env.amp1$cog.mgm.S <- vegan::specnumber(cog.mgm)
+env.amp1$bac.mgm.S <- vegan::specnumber(bac.mgm)
+env.amp1$bac.amp.S <- vegan::specnumber(bac.amp)
+
+env.amp1$cog.mgm.sum <- rowSums(cog.mgm)
+env.amp1$rgi.mgm.sum <- rowSums(rgi.mgm)
+env.amp1$cazy.mgm.sum <- rowSums(cazy.mgm)
+env.amp1$ko.mgm.sum <- rowSums(ko.mgm)
+env.amp1$bac.mgm.sum <- rowSums(bac.mgm)
+
+#genomeTraits
+genomeTrait<-read_excel("data/genomeTrait/genomeTraits_contigs500.xlsx",sheet = "Sheet1")
+
+genomeTrait$sample_name == env.amp1$sample_name
+
+env.genomeTraits<-cbind(env.amp1,genomeTrait[,c(3:18)])
+
+#Fig.2a
+summary(lm(env.genomeTraits$AGS2~env.genomeTraits$pH))
+shapiro.test(residuals(lm(env.genomeTraits$AGS2~env.genomeTraits$pH)))
+
+p11<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=AGS2, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= pH, y=AGS2), method ="lm", col= "white")+
+  labs(x = "pH",y = "Average Genome Size (Mbp)")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=12, face="bold"),
+        legend.text = element_text(colour="black", size=12, face="bold"),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))+
+  annotate("text",x=6.5,y=6, label="R2 = 0.401\nP = 2.033e-05",
+           size=5,color="black")
+p11
+
+#Fig.2b
+summary(lm(env.genomeTraits$GC_all~env.genomeTraits$pH))
+shapiro.test(residuals(lm(env.genomeTraits$GC_all~env.genomeTraits$pH)))
+
+p12<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=GC_all, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= pH, y=GC_all), method ="lm", col= "white")+
+  labs(x = "pH",y = "GC Content (%)")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=12, face="bold"),
+        legend.text = element_text(colour="black", size=12, face="bold"),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))+
+  annotate("text",x=6.5,y=59, label="R2 = 0.392\nP = 2.627e-05",
+           size=5,color="black")
+p12
+
+#Fig.3c
+summary(lm(env.genomeTraits$ACN8~env.genomeTraits$pH))
+shapiro.test(residuals(lm(env.genomeTraits$ACN8~env.genomeTraits$pH)))
+
+p13<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=ACN8, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= pH, y=ACN8), method ="lm", col= "white")+
+  labs(x = "pH",y = "Average 16S Copy Number")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=12, face="bold"),
+        legend.text = element_text(colour="black", size=12, face="bold"),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))+
+  annotate("text",x=6.5,y=15, label="R2 = 0.09\nP = 0.0393",
+           size=5,color="black")
+p13
+
+#Fig.2d
+summary(lm(log(env.genomeTraits$Growthrate)~env.genomeTraits$pH))
+shapiro.test(residuals(lm(log(env.genomeTraits$Growthrate)~env.genomeTraits$pH)))
+
+p14<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=Growthrate, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= pH, y=Growthrate), method ="lm", col= "white")+
+  labs(x = "pH",y = "Minimal Doubling Time (hours)")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=12, face="bold"),
+        legend.text = element_text(colour="black", size=12, face="bold"),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))+
+  annotate("text",x=6.5,y=4, label="R2 = 0.014\nP = 0.489",
+           size=5,color="black")
+p14
+
+
+```
+
+## R Markdown
+
+

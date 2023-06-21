@@ -1,0 +1,226 @@
+---
+title: "Fig_1"
+author: "Cong Wang"
+date: "2023-06-20"
+output: html_document
+---
+
+```{r fig.height=8.5, fig.width=12}
+#Fig.1a
+rm(list=ls())
+load("data/CFB.samplesitemap.Rdata")
+
+library(ggspatial)
+library(sf)
+library(maptools)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(cowplot)
+library(colorRamps)
+library(ggrepel)
+
+site.CFB2<-st_as_sf(site.CFB,coords=c("longitude","latitude"),crs=4326)
+site.CFB2$Site<-factor(site.CFB2$sample_name,levels = c("GH","LS", "CBS", "DLS", "BTM","TTS" ,"BDGS", "GTS", "HSD" , "DHS", "NG", "XSBN"))
+
+mapCN<-ggplot() + 
+  geom_sf(data = china,fill="NA",color="grey",size=0.5) + 
+  #geom_sf(data = nine_line,color="black",size=0.5) + 
+  scale_size(range = c(1,5))+
+  annotation_scale(location = "bl") +
+  annotation_north_arrow(location = "tl", which_north = "true",
+                         style = north_arrow_fancy_orienteering)+
+  geom_sf(data=site.CFB2,aes(color=Site),size=7)+
+  geom_text_repel(data = site.CFB2,aes(label=sample_name,geometry=geometry),stat = "sf_coordinates",color="blue",size=7)+
+  #annotate("text",x=-2556175.2,y=-2387082,label="GS京(2022)1061号",size=3)+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"),name="Site.latitude")+
+  coord_sf(ylim = c(-2387082,1654989),xlim = c(-2556175.2,2816095),crs = "+proj=laea +lat_0=40 +lon_0=104")+
+  theme_bw()+xlab("Longitude")+ylab("Latitude")+
+  theme(plot.margin=unit(c(0,0,0,0),"mm"),
+        axis.text = element_text(size = 18,colour = "black",face = "bold"),
+        axis.title = element_text(size = 18,colour = "black",face = "bold"))
+
+mapCN_nineline<-ggplot() + 
+  geom_sf(data = china,fill="NA",color="grey",size=0.5) +
+  scale_size(range = c(1,5))+
+  annotation_scale(location = "br") +
+  coord_sf(ylim = c(-4228017,-1877844),xlim = c(117131.4,2115095),crs="+proj=laea +lat_0=40 +lon_0=104")+
+  theme_bw()+theme(aspect.ratio = 1.5,plot.margin=unit(c(0,0,0,0),"mm"))
+
+ggdraw()+
+  draw_plot(mapCN)+
+  draw_plot(mapCN_nineline,x = 0.715, y = 0.095, width = 0.25, height = 0.230)
+
+#ggsave("pdf2/Fig.S1.SampleSiteMap.2023.01.05.pdf", width = 12, height = 8.5)
+
+```
+```{r}
+#Fig.1b
+rm(list = ls())
+load("data/CForBio.data.prep.2022.11.22.RData")
+
+library(vegan)
+#cutoff <- 1000
+
+sort(colSums(bac.amp1))
+sort(colSums(bac.mgm1))
+sort(colSums(ko.mgm1))
+sort(colSums(cog.mgm1))
+sort(colSums(rgi.mgm1))
+sort(colSums(cazy.mgm1))
+
+bac.amp <- rrarefy(t(bac.amp1),sample = 24903 )
+bac.mgm <- data.frame(t(bac.mgm1))
+
+ko.mgm <- data.frame(t(ko.mgm1))
+cog.mgm <- data.frame(t(cog.mgm1))
+rgi.mgm <- data.frame(t(rgi.mgm1))
+cazy.mgm <- data.frame(t(cazy.mgm1))
+
+################
+###Ordination###
+#################
+library(ape)
+library(ggplot2)
+library(colorRamps)
+
+set.seed(315)
+bac.amp.pc<-pcoa(vegdist(decostand(bac.amp,"hellinger"),"bray"))
+env.amp.pc<-data.frame(bac.amp.pc$vectors[,c("Axis.1", "Axis.2")], env.amp1)
+bac.amp.pc1=round(bac.amp.pc$values$Relative_eig[1], 3)*100
+bac.amp.pc2=round(bac.amp.pc$values$Relative_eig[2], 3)*100
+env.sub <- env.amp1[, c("latitude","longitude","altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "soil_D","AllP_abu","AllP_bsa","AllP_rich")]; 
+colnames(env.sub) <-  c("Latitude","Longitude","Altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness")  
+ef<-envfit(bac.amp.pc$vectors, env.sub, na.rm = TRUE); ef
+bac.amp.ef.arrows<-data.frame(ef$vectors$arrows)
+bac.amp.ef.arrows$Variable <- row.names(bac.amp.ef.arrows)
+m1<-max(abs(env.amp.pc$Axis.1)); m2<-max(abs(env.amp.pc$Axis.2))
+
+gp1<-ggplot(env.amp.pc) +
+  geom_point(mapping = aes(x = Axis.1, y = Axis.2, colour = site.latitude),size=3, alpha = 0.9) +
+  labs(x = sprintf("PCo1 (%.1f%%)", bac.amp.pc1), y = sprintf("PCo2 (%.1f%%)", bac.amp.pc2))+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  ggtitle("Bacteria.16S.Amplicon")+
+  geom_segment(data = bac.amp.ef.arrows, aes(x = 0, xend = Axis.1 * m1, y = 0, yend = Axis.2 * m2), arrow = arrow(length = unit(0.1, "cm")), colour = "grey") +
+  geom_text_repel(data = bac.amp.ef.arrows, aes(x = Axis.1 * m1, y = Axis.2 * m2, label = Variable),size = 3,colour="black")+theme(axis.title = element_text(color="black",face = "bold"),axis.text = element_text(color="black",face="bold"))+theme_bw()
+
+gp1
+
+#Fig. 1c
+set.seed(315)
+ko.mgm.pc<-pcoa(vegdist(decostand(ko.mgm,"hellinger"),"bray"))
+env.amp.pc<-data.frame(ko.mgm.pc$vectors[,c("Axis.1", "Axis.2")], env.amp1)
+ko.mgm.pc1=round(ko.mgm.pc$values$Relative_eig[1], 3)*100
+ko.mgm.pc2=round(ko.mgm.pc$values$Relative_eig[2], 3)*100
+env.sub <- env.amp1[, c("latitude","longitude","altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "soil_D","AllP_abu","AllP_bsa","AllP_rich")]; 
+colnames(env.sub) <-  c("Latitude","Longitude","Altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness")  
+ef<-envfit(ko.mgm.pc$vectors, env.sub, na.rm = TRUE); ef
+ko.mgm.ef.arrows<-data.frame(ef$vectors$arrows)
+ko.mgm.ef.arrows$Variable <- row.names(ko.mgm.ef.arrows)
+m1<-max(abs(env.amp.pc$Axis.1)); m2<-max(abs(env.amp.pc$Axis.2))
+
+gp2<-ggplot(env.amp.pc) +
+  geom_point(mapping = aes(x = Axis.1, y = Axis.2, colour = site.latitude),size=3, alpha = 0.9) +
+  labs(x = sprintf("PCo1 (%.1f%%)", ko.mgm.pc1), y = sprintf("PCo2 (%.1f%%)", ko.mgm.pc2))+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  ggtitle("ko.mgm")+
+  geom_segment(data = ko.mgm.ef.arrows, aes(x = 0, xend = Axis.1 * m1, y = 0, yend = Axis.2 * m2), arrow = arrow(length = unit(0.1, "cm")), colour = "grey") +
+  geom_text_repel(data = ko.mgm.ef.arrows, aes(x = Axis.1 * m1, y = Axis.2 * m2, label = Variable),size = 3)+theme(axis.title = element_text(color="black",face = "bold"),axis.text = element_text(color="black",face="bold"))+theme_bw()
+
+gp2
+
+#Fig. 1d
+```
+
+
+```{r fig.height=12, fig.width=12}
+rm(list = ls())
+
+library(vegan)
+library(ggplot2)
+library(colorRamps)
+library(ape)
+library(splitstackshape)
+library(reshape2)
+
+da1 <- readRDS("data/Barplot.2022.07.28/amp.com.2022.07.28.rds")
+da2 <- readRDS("data/Barplot.2022.07.28/mgm.com.2022.07.28.rds")
+
+da1.s <- da1[,names(da1) %in% names(da2)]
+da2.s <- da2[,names(da2) %in% names(da1)]
+
+da1.sl <- melt(da1.s,id.vars = "Group.1")
+da1.sl<-cSplit(da1.sl, "Group.1", ":")
+names(da1.sl)<-c("Phylum","Relative_Abundance", "site", "ph.sample")
+da1.sl$Method <- "16S"
+
+da2.sl <- melt(da2.s,id.vars = "Group.1")
+da2.sl<-cSplit(da2.sl, "Group.1", ":")
+names(da2.sl)<-c("Phylum","Relative_Abundance", "site", "ph.sample")
+da2.sl$Method <- "Metagenome"
+
+da.sl <- rbind(da1.sl, da2.sl)
+load("data/CForBio.data.prep.2022.11.22.RData")
+env.amp1$ph.sample <- paste0("pH",round(env.amp1$pH,2),env.amp1$sample_name)
+
+da.sl0 <- merge(da.sl, env.amp1, by.x = "ph.sample", by.y = "ph.sample", all = T)
+
+col11<-c("#ff00ff","#00ff00", "deepskyblue", "gold", "red", "navy", "darkgreen","maroon3", "black", "bisque", "#0000FF","#FF3399","#FFCC33","#9999FF", "#FF99FF", "#FFFFCC",
+         "#33FFFF","#CCFF00","#CCFFCC","#FF3300","#CC99CC","#CC66CC","#FFFFCC","#CC0033","#666666","slateblue1","springgreen","steelblue1","tan1","thistle1","tomato","turquoise", "violet", "red", "yellowgreen","peachpuff", "peru", "pink", "plum2", "purple","wheat", "cornsilk3","cornsilk","coral4","coral",
+         "chocolate4","chocolate","black","chartreuse4","chartreuse","burlywood4","burlywood","brown4","blue","bisque4","bisque",
+         "azure4","azure","aquamarine4","aquamarine","antiquewhite4","antiquewhite","aliceblue","dodgerblue4","dodgerblue","dimgrey",
+         "deepskyblue4", "deepskyblue", "deeppink4", "deeppink","darkviolet", "darkslategray4","darkslategray",
+         "darkseagreen4", "darkseagreen", "darksalmon", "darkred", "darkorchid4", "darkorchid", "darkorange4",
+         "darkorange","firebrick","darkgreen", "darkgoldenrod4","grey", "darkgoldenrod", "darkcyan", "grey")
+
+p15<-ggplot(da.sl0, aes(x = ph.sample, y = Relative_Abundance, fill= Phylum)) +
+  geom_bar(stat='identity', position = "fill")+
+  facet_wrap(~ Method, ncol=1 )+
+  scale_fill_manual(values= col11)+
+  theme_bw()+
+  labs(x="",y = "Relative abundance")+
+  #guides(fill=guide_legend(title= opf))+
+  scale_y_continuous(labels = scales::percent)+
+  theme(strip.text = element_text(colour="black", size = 20,face="bold"),
+        #strip.background = element_rect(fill = "blue"),
+        panel.spacing = unit(0, "lines"),
+        legend.title = element_text(colour="black", size=20, face="bold"),
+        legend.text = element_text(colour="black", size=20, face="bold"),
+        axis.text.y=element_text(colour="black",size=20,face="bold"),
+        axis.text.x=element_text(colour= blue2red(36),size=18,face="bold",angle = 90,hjust = 1,vjust = 0.5),
+        axis.title=element_text(colour="black",size=20,face="bold"))
+p15
+#ggsave("pdf/Fig.4A.Barplot.2022.12.29.pdf", width = 12, height = 12)
+```
+
+
+```{r fig.height=12, fig.width=18}
+#Fig.S7
+da.sl.sub <- da.sl0[da.sl0$Phylum %in% c("Proteobacteria", "Acidobacteria", "Actinobacteria", "Verrucomicrobia", "Bacteroidetes", "Planctomycetes", "Chloroflexi","Nitrospirae", "Chlamydiae", "Elusimicrobia","Firmicutes", "Chlorobi" ), ]
+
+p16<-ggplot(data=da.sl0,aes(x= pH, y= Relative_Abundance)) + geom_jitter(aes(color = site.latitude, shape = Method),  height = 0, alpha = 0.8, size =5) + 
+  geom_smooth(aes( group = Method), color = "black")+
+  facet_wrap (Phylum ~ . , scale = "free")+
+  labs(x = "pH",y = "Relative abundance")+
+  scale_y_continuous(labels = scales::percent)+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(strip.text = element_text(colour="black", size = 18,face="bold"),
+        panel.spacing = unit(0, "lines"),
+        legend.title = element_text(colour="black", size=20, face="bold"),
+        legend.text = element_text(colour="black", size=20, face="bold"),
+        axis.text=element_text(size=20,face="bold"),
+        axis.title=element_text(size=20,face="bold"))
+p16
+#ggsave("pdf/Fig.4B.relativeAbundance vs pH.2022.12.29.pdf", width = 18, height = 12)
+
+da.sl.sub.acidobacteria.16s <- da.sl0[da.sl0$Phylum %in% c("Acidobacteria") & da.sl0$Method %in% "16S", ]
+summary(lm(Relative_Abundance~pH,data = da.sl.sub.acidobacteria.16s))
+
+da.sl.sub.acidobacteria.mgm <- da.sl0[da.sl0$Phylum %in% c("Acidobacteria") & da.sl0$Method %in% "Metagenome", ]
+summary(lm(Relative_Abundance~pH,data = da.sl.sub.acidobacteria.mgm))
+
+```
+
+## R Markdown
+

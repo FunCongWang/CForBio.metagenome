@@ -1,0 +1,319 @@
+---
+title: "Fig_4"
+author: "Cong Wang"
+date: "2023-06-20"
+output: html_document
+---
+
+```{r}
+#Fig.3A
+rm(list = ls())
+library(igraph)
+load("data/CForBio.data.prep.2022.11.22.RData")
+#ko.mgm <- data.frame(t(ko.mgm1))
+#ko.mgm <- ko.mgm[,colSums(ko.mgm) > 0 & specnumber(t(ko.mgm)) > 18 ] 
+#spman.r0 = corr.test(ko.mgm, use="pairwise",method="spearman",adjust="fdr", alpha=.05, ci=FALSE)
+#beep()
+#saveRDS(spman.r0, paste0("data/Network/SpMan.Corr/all.corr/KO.SpMan.allcorr.RDS"))
+#spman.r0 <- readRDS(paste0("Network/SpMan.Corr/all.corr/KO.SpMan.allcorr.RDS"))
+da<-readRDS(paste0("data/Network/SpMan.Corr/sig.corr/KO.SpMan.sig.RDS"))
+g <- graph.data.frame(da, directed=FALSE)
+
+fun.fc<-cluster_fast_greedy(g)
+print(modularity(fun.fc))
+
+modularity(fun.fc,membership(fun.fc))
+#membership(fun.fc)
+ko.modu.memb <- data.frame(c(membership(fun.fc) ))
+ko.modu.memb <-data.frame("KO"= row.names(ko.modu.memb), "Modular"= ko.modu.memb$c.membership.fun.fc..)
+ko.sub<-ko.mgm.ID0 [ko.mgm.ID0$Category%in% ko.modu.memb$KO,]
+ko.modu.memb.ID<-merge(ko.modu.memb, ko.sub, by.x = "KO", by.y = "Category", all = T)
+#saveRDS(ko.modu.memb.ID, paste0("data/Network/SpMan.Corr/modular/ko.modu.memb.ID.RDS"))
+
+print(sizes(fun.fc))###
+fun.comps <- membership(fun.fc)
+colbar <-c(  "blue","red")
+V(g)$color <- colbar[fun.comps]
+set.seed(123)
+#pdf("pdf/Fig.3A.Network.2022.11.22.pdf", width = 4, height = 4)
+plot(g, layout = layout_with_kk, edge.width=0.07,edge.color="grey", vertex.frame.color=NA,vertex.label=NA,edge.lty=1,
+     edge.curved=T,vertex.size=1,margin=c(0, 0,0,0))
+#dev.off()
+
+#Fig.3B
+rm(list = ls())
+library(vegan)
+library(psych)##
+library(igraph)
+#library(beepr)
+library(ggplot2)
+library(psych)##
+library(igraph)
+library(tidyr)
+library(nlme) 
+library(MuMIn)
+
+load("data/CForBio.data.prep.2022.11.22.RData")
+
+ko.mgm <- data.frame(t(ko.mgm1))
+ko.mgm <- ko.mgm[,colSums(ko.mgm) > 0 & specnumber(t(ko.mgm)) > 18 ] 
+
+ko.modu.memb.ID<- readRDS(paste0("data/Network/SpMan.Corr/modular/ko.modu.memb.ID.RDS"))
+#write.csv(ko.modu.memb.ID, "Network/SpMan.Corr/modular/ko.modu.memb.ID.csv")
+
+ko.modu.memb.ID.mod1 <- ko.modu.memb.ID[ko.modu.memb.ID$Modular==1,]
+ko.mgm.mod1 <- ko.mgm[,colnames(ko.mgm) %in% ko.modu.memb.ID.mod1$KO]
+row.names(ko.mgm.mod1) == env.amp1$sample_name
+
+ko.mgm.mod1.pH<- data.frame(ph=env.amp1[,"pH"], ko.mgm.mod1)
+
+ko.mgm.mod1.pH.long <- gather(ko.mgm.mod1.pH, KO, abu, K00003:K22502, factor_key=TRUE)
+ko.mgm.mod1.pH.mean <- ko.mgm.mod1.pH
+env.amp1$mod1<-rowSums(ko.mgm.mod1) / ncol(ko.mgm.mod1)
+
+ggplot() + 
+  geom_smooth(data=ko.mgm.mod1.pH.long, aes(x= ph, y= log(abu+1), group = KO), col= "grey", method = "lm" , size = 0.05,  fill=NA)+
+  geom_smooth(data=env.amp1, aes(x= pH, y= log(mod1+1) ), col= "blue", method = "lm", size = 5)+
+  labs(x = "Soil pH",y = "Log (abundance + 1)")+ylim(-1,10)+
+  theme_bw()+
+  theme(legend.title = element_text(colour="black", size=12, face="bold"),
+        legend.text = element_text(colour="black", size=12, face="bold"),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))
+
+#ggsave("pdf/Fig.3B.corr.pH.M1.2022.12.29.pdf", width = 4, height = 3)
+
+lme0<-lme(abu~ph,random=~1|KO,data=ko.mgm.mod1.pH.long, control=lmeControl(opt = "optim"))
+summary(lme0)
+anova(lme0)
+r.squaredGLMM(lme0)
+
+ko.modu.memb.ID.mod2 <- ko.modu.memb.ID[ko.modu.memb.ID$Modular==2,]
+ko.mgm.mod2 <- ko.mgm[,colnames(ko.mgm) %in% ko.modu.memb.ID.mod2$KO]
+row.names(ko.mgm.mod2) == env.amp1$sample_name
+
+ko.mgm.mod2.pH<- data.frame(ph=env.amp1[,"pH"], ko.mgm.mod2)
+
+ko.mgm.mod2.pH.long <- gather(ko.mgm.mod2.pH, KO, abu, K00001:K22507, factor_key=TRUE)
+ko.mgm.mod2.pH.mean <- ko.mgm.mod2.pH
+env.amp1$mod2<-rowSums(ko.mgm.mod2) / ncol(ko.mgm.mod2)
+ggplot() + 
+  geom_smooth(data=ko.mgm.mod2.pH.long, aes(x= ph, y= log(abu+1), group = KO), col= "grey", method = "lm" , size = 0.05,  fill=NA)+
+  geom_smooth(data=env.amp1, aes(x= pH, y= log(mod2+1) ), col= "red", method = "lm", size = 5,  fill=NA)+
+  labs(x = "Soil pH",y = "Log (abundance + 1)")+ylim(-1,10)+
+  theme_bw()+
+  theme(legend.title = element_text(colour="black", size=12, face="bold"),
+        legend.text = element_text(colour="black", size=12, face="bold"),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))
+
+#ggsave("pdf/Fig.3C.corr.pH.M2.2022.12.29.pdf", width = 4, height = 3)
+
+lme0<-lme(abu~ph,random=~1|KO,data=ko.mgm.mod2.pH.long, control=lmeControl(opt = "optim"))
+summary(lme0)
+anova(lme0)
+r.squaredGLMM(lme0)
+
+
+```
+
+
+```{r fig.height=3.5, fig.width=4}
+#Fig.3D-E
+rm(list = ls())
+
+library(ggplot2)
+library(ggrepel)
+library(stringr)
+
+dataset <- read.csv("data/Network/SpMan.Corr/modular/KO.Pathway/KO.Pathway3.result.up.down.csv", head = T)
+#Fig.3D
+ggplot( dataset, aes(x = -logFC, y = -log10(PValue), colour=sig)) +
+  geom_point(alpha=0.5, size=3) +
+  xlim(-6,6)+ylim (0,10)+
+  scale_color_manual(values=c("red", "grey", "blue"))+
+  geom_vline(xintercept=c(-0.5,0.5),lty=4,col="grey",lwd=0.5) +
+  geom_hline(yintercept = -log10(0.02),lty=4,col="grey",lwd=0.5) +
+  scale_y_continuous(breaks=seq(0,10,by=2))+
+  geom_text_repel(data=subset(dataset, FDR < 0.05 ),vjust="inward",hjust="inward",
+                  aes(label=X, color = sig), angle = 0, size=3, fontface= "bold")+
+  labs(x="log2(fold change)", y="-log10 (p-value)")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position="none", 
+        legend.title = element_blank(),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))
+
+#ggsave("pdf/Fig.3D.KO.vocano.level3.v2.2022.12.29.pdf", width = 4, height = 3.5)
+
+ggplot( dataset, aes(x = -logFC, y = -log10(PValue), colour=sig)) +
+  geom_point(alpha=0.5, size=3) +
+  xlim(-6,6)+ylim (0,10)+
+  scale_color_manual(values=c("red", "grey", "blue"))+
+  geom_vline(xintercept=c(-0.5,0.5),lty=4,col="grey",lwd=0.5) +
+  geom_hline(yintercept = -log10(0.02),lty=4,col="grey",lwd=0.5) +
+  scale_y_continuous(breaks=seq(0,10,by=2))+
+  #geom_text_repel(data=subset(dataset, FDR < 0.05 ),vjust="inward",hjust="inward",
+  #aes(label=X, color = sig), angle = 0, size=3, fontface= "bold")+
+  labs(x="log2(fold change)", y="-log10 (p-value)")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position="none", 
+        legend.title = element_blank(),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))
+
+#ggsave("pdf/Fig.3D_2.KO.vocano.level3.v2.2022.12.29.pdf", width = 4, height = 3.5)
+
+dataset <- read.csv("data/Network/SpMan.Corr/modular/KO.Pathway/KO.Pathway2.result.up.down.csv", head = T)
+
+#Fig.3E
+ggplot(dataset, aes(x = logFC,y = -log10(PValue),colour=sig)) +
+  geom_point(alpha=0.5, size=3) +
+  xlim(-6,6)+ ylim (0,10)+
+  scale_color_manual(values=c("blue", "grey", "red"))+
+  geom_vline(xintercept=c(-0.5,0.5),lty=4,col="grey",lwd=0.5) +
+  geom_hline(yintercept = -log10(0.02),lty=4,col="grey",lwd=0.5) +
+  scale_y_continuous(breaks=seq(0,10,by=2))+
+  geom_text_repel(data=subset(dataset, FDR < 0.05 ),vjust="inward",hjust="inward",
+                  aes(label=X, color = sig), angle = 0, size=3, fontface= "bold")+
+  labs(x="log2(fold change)", y="-log10 (p-value)")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position="none", 
+        legend.title = element_blank(),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))
+
+#ggsave("pdf/Fig.3E.KO.vocano.level2.v2.2022.12.29.pdf", width = 4, height = 3.5)
+
+ggplot( dataset, aes(x = logFC, y = -log10(PValue), colour=sig)) +
+  geom_point(alpha=0.5, size=3) +
+  xlim(-6,6)+ ylim (0,10)+
+  scale_color_manual(values=c("blue", "grey", "red"))+
+  geom_vline(xintercept=c(-0.5,0.5),lty=4,col="grey",lwd=0.5) +
+  geom_hline(yintercept = -log10(0.02),lty=4,col="grey",lwd=0.5) +
+  #scale_y_continuous(breaks=seq(0,10,by=2))+
+  #geom_text_repel(data=subset(dataset, FDR < 0.05 ),vjust="inward",hjust="inward",
+  #aes(label=X, color = sig), angle = 0, size=3, fontface= "bold")+
+  labs(x="log2(fold change)", y="-log10 (p-value)")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position="none", 
+        legend.title = element_blank(),
+        axis.text=element_text(size=12,face="bold"),
+        axis.title=element_text(size=12,face="bold"))
+
+#ggsave("pdf/Fig.3E_2.KO.vocano.level2.v2.2022.12.29.pdf", width = 4, height = 3.5)
+```
+
+
+```{r fig.height=4, fig.width=21}
+#Fig.3F
+rm(list = ls())
+load("data/CForBio.data.prep.2022.11.22.RData")
+library(readxl)
+library(psych)
+library(tidyr)
+library(ggplot2)
+library(vegan)
+library(colorRamps)
+library(ggrepel)
+library(grid)
+
+
+#func <- c("Ribosome","Aminoacyl.tRNA.biosynthesis",  "Spliceosome", "mRNA.surveillance")
+#nam <- "Translation"
+#hi <- 15
+#Heatmap.genes <- function (func, nam, hi){
+ko.ID.sub<-read_excel("data/KEGG.123.2022.12.09.xlsx",sheet = "r.k_4")
+#ko.ID.sub <- data.frame(ko.ID[ko.ID$Level3 %in%  func,])
+ko.ID.sub <- merge(ko.ID.sub, ko.mgm.ID0, by.x = "KO", by.y = "Category", all = F)
+ko.mgm1$KO <- row.names(ko.mgm1)
+ko.mgm.sub0 <- merge(ko.ID.sub,ko.mgm1, by = "KO", all = T )
+ko.mgm.sub0 <- ko.mgm.sub0[!is.na(ko.mgm.sub0$Level1),]
+ko.mgm.sub0 <- ko.mgm.sub0[ order(ko.mgm.sub0$No),]
+row.names(ko.mgm.sub0) <- paste0(ko.mgm.sub0$KO,"_", ko.mgm.sub0$No, "_", ko.mgm.sub0$Level1, "_", ko.mgm.sub0$Level2 , "_", ko.mgm.sub0$Level3)
+
+ko.sel <-ko.mgm.sub0[, c(-1:-6)]
+ko.sel.ID <- ko.mgm.sub0[, c(1:6)]
+colnames(ko.sel) == env.amp1$sample_name
+
+env.tmp1<-env.amp1[,c("latitude","longitude","altitude","MAP","MAT",
+                      "TC","TN","TP","pH","ACa","AMg","AFe","AK","C_N","C_P", "N_P", "soil_D",
+                      "AllP_abu","AllP_bsa","AllP_rich")]
+
+env.tmp2 <- data.frame(t(ko.sel))
+
+spman.d12 = corr.test(env.tmp1, env.tmp2,use="pairwise",method="spearman",adjust="fdr",alpha=.05,ci=FALSE)
+
+
+r<-data.frame(spman.d12$r)
+r[is.na(r)] <-0
+r$X<-row.names(r)
+
+r.long <- gather(r, Y, r, 1 : ncol(r)-1,  factor_key=TRUE)
+p<-data.frame(spman.d12$p)
+p$X<-row.names(p)
+p.long <- gather(p, Y, p, 1 : ncol(p)-1, factor_key=TRUE)
+cor.out<-cbind(r.long,p.long$p)
+cor.out$r <- round(as.numeric(cor.out$r), 2)
+str(cor.out$r)
+
+cor.out$X<- factor(cor.out$X, 
+                   levels = c("latitude","longitude","altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe",
+                              "AK","C_N","C_P", "N_P", "soil_D","AllP_abu","AllP_bsa","AllP_rich"))
+
+cor.out$X<- factor(cor.out$X, 
+                   labels = c("Latitude","Longitude","Altitude","Mean annual precipitation","Mean annual temperature",
+                              "Total Carbon","Soil total Nitrogen","Soil total Phosphorus","Soil pH","Soil available Calcium",
+                              "Soil available Magnesium", "Soil available Ferrum", "Soil available Potassium", "Carbon : Nitrogen ratio", "Carbon : Phosphorus ratio", "Nitrogen: Phosphorus ratio", 
+                              "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness"))
+
+library(splitstackshape)
+
+cor.out<-cSplit(cor.out, "Y", "_")
+
+cor.out$Y_4 <- factor(cor.out$Y_4, levels = c("Bacterial.secretion.system","Cell.motility","Xenobiotics.biodegradation.and.metabolism","Signal.transduction","Metabolism.of.terpenoids.and.polyketides","Glycan.biosynthesis.and.metabolism","Porphyrin.metabolism",
+                                              "Energy.metabolism","Membrane.transport","Citrate.cycle","Glyoxylate.and.dicarboxylate.metabolism","Metabolism.of.other.amino.acids"))
+
+cor.out$Y_4 <- factor(cor.out$Y_4,labels = c("BSS","CM","XenoBDM","Two component system","MTP","GBM","PM",
+                                             "Energy metabolism","Membrane transport","CC","GDM","MAC"))
+
+p<- ggplot(cor.out, aes(Y_1,X)) +
+  facet_grid(.~ Y_4,  scales = "free", space = "free" )+
+  geom_tile(aes(fill = r), size=0)+
+  geom_hline(yintercept = c(8.5,9.5), color = "red")+
+  scale_fill_gradient(guide = "legend", high='green', low='blue',name="rho")+
+  theme(strip.text = element_text(size = 10,face="bold", color = c("white")),
+        strip.background = element_rect(fill = "red"),
+        panel.spacing = unit(0.1, "lines"),
+        axis.title= element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y=element_text(colour="black", size=10, face="bold"))
+#p
+
+g <- ggplot_gtable(ggplot_build(p))
+strips <- which(grepl('strip-', g$layout$name))
+fills <- c("red","red","red","red","red","red","red",
+           "blue","blue","blue","blue","blue")
+
+for (i in seq_along(strips)) {
+  k <- which(grepl('rect', g$grobs[[strips[i]]]$grobs[[1]]$childrenOrder))
+  l <- which(grepl('titleGrob', g$grobs[[strips[i]]]$grobs[[1]]$childrenOrder))
+  g$grobs[[strips[i]]]$grobs[[1]]$children[[k]]$gp$fill <- fills[i]
+}
+
+#pdf("pdf/Fig.3F.Heatmap.KEGG.level2.all.2022.12.29.pdf", width = 24, height = 4)
+
+plot(g)
+
+#dev.off()
+
+
+```
+
+## R Markdown
+

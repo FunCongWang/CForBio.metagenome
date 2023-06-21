@@ -1,0 +1,211 @@
+---
+title: "Fig_3"
+author: "Cong Wang"
+date: "2023-06-20"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(vegan)
+library(colorRamps)
+library(psych)
+library(tidyr)
+library(readxl)
+
+rm(list = ls())
+load("data/CForBio.data.prep.2022.11.22.RData")
+
+library(vegan)
+cutoff <- 1000
+
+sort(colSums(bac.amp1))
+sort(colSums(bac.mgm1))
+sort(colSums(ko.mgm1))
+sort(colSums(cog.mgm1))
+sort(colSums(rgi.mgm1))
+sort(colSums(cazy.mgm1))
+
+bac.amp <- rrarefy(t(bac.amp1),sample = 24903 )
+bac.mgm <- data.frame(t(bac.mgm1))
+
+ko.mgm <- data.frame(t(ko.mgm1))
+cog.mgm <- data.frame(t(cog.mgm1))
+rgi.mgm <- data.frame(t(rgi.mgm1))
+cazy.mgm <- data.frame(t(cazy.mgm1))
+
+env.amp1$rgi.mgm.H <- vegan::diversity(rgi.mgm)
+env.amp1$cazy.mgm.H <- vegan::diversity(cazy.mgm)
+env.amp1$ko.mgm.H <- vegan::diversity(ko.mgm)
+env.amp1$cog.mgm.H <- vegan::diversity(cog.mgm)
+env.amp1$bac.mgm.H <- vegan::diversity(bac.mgm)
+env.amp1$bac.amp.H <- vegan::diversity(bac.amp)
+
+env.amp1$rgi.mgm.S <- vegan::specnumber(rgi.mgm)
+env.amp1$cazy.mgm.S <- vegan::specnumber(cazy.mgm)
+env.amp1$ko.mgm.S <- vegan::specnumber(ko.mgm)
+env.amp1$cog.mgm.S <- vegan::specnumber(cog.mgm)
+env.amp1$bac.mgm.S <- vegan::specnumber(bac.mgm)
+env.amp1$bac.amp.S <- vegan::specnumber(bac.amp)
+
+env.amp1$cog.mgm.sum <- rowSums(cog.mgm)
+env.amp1$rgi.mgm.sum <- rowSums(rgi.mgm)
+env.amp1$cazy.mgm.sum <- rowSums(cazy.mgm)
+env.amp1$ko.mgm.sum <- rowSums(ko.mgm)
+env.amp1$bac.mgm.sum <- rowSums(bac.mgm)
+
+#genomeTraits
+genomeTrait<-read_excel("data/genomeTrait/genomeTraits_contigs500.xlsx",sheet = "Sheet1")
+
+genomeTrait$sample_name == env.amp1$sample_name
+
+env.genomeTraits<-cbind(env.amp1,genomeTrait[,c(3:18)])
+
+#Fig. 3a
+p2<-ggplot() + geom_jitter(data=env.amp1,  height = 0, aes(x= pH, y=bac.amp.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.amp1,aes(x= pH, y=bac.amp.S), method ="loess", col= "white")+
+  labs(x = "Soil pH",y = "S.16S")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=6.5,y=2200, label="R2 = 0.479\nP = 1.787e-06",
+           size=5,color="black")
+p2
+
+#ggsave("pdf/Fig.1b.corr.pH.H16S.2023.04.18.pdf", width = 4, height = 3)
+summary(lm(env.amp1$bac.amp.S~env.amp1$pH))
+shapiro.test(residuals(lm(env.amp1$bac.amp.S~env.amp1$pH)))
+
+#Fig. 3b
+p4<-ggplot() + geom_jitter(data=env.amp1,  height = 0, aes(x= pH, y=ko.mgm.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.amp1,aes(x= pH, y=ko.mgm.S), col= "white")+
+  labs(x = "Soil pH",y = "S.KO")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=6.5,y=8300, label="R2 = 0.384\nP = 3.274e-05",
+           size=5,color="black")
+p4
+
+#ggsave("pdf2/Fig.2a.corr.pH.HKO.2022.12.29.pdf", width = 4, height = 3)
+summary(lm(env.amp1$ko.mgm.S~env.amp1$pH))
+shapiro.test(residuals(lm(env.amp1$ko.mgm.S~env.amp1$pH)))
+
+#Fig. 3c
+p6<-ggplot() + geom_jitter(data=env.amp1,  height = 0, aes(x= pH, y = rgi.mgm.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.amp1,aes(x= pH, y=rgi.mgm.S), method = "lm", color = "white")+
+  labs(x = "Soil pH",y = "S.ARG")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=6.5,y=770, label="R2 = 0.443\nP = 5.6e-06",
+           size=5,color="black")
+p6
+
+summary(lm(env.amp1$rgi.mgm.S~env.amp1$pH))
+shapiro.test(residuals(lm(env.amp1$rgi.mgm.S~env.amp1$pH)))
+
+#Fig. 3d
+p8<-ggplot() + geom_jitter(data=env.amp1,  height = 0, aes(x= pH, y = cazy.mgm.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.amp1,aes(x= pH, y=cazy.mgm.S), method = "lm", color = "white")+
+  labs(x = "Soil pH",y = "S.Cazy")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=6.5,y=110, label="R2 = 0.439\nP = 6.266e-06",
+           size=5,color="black")
+p8
+summary(lm(env.amp1$cazy.mgm.S~env.amp1$pH))
+shapiro.test(residuals(lm(env.amp1$cazy.mgm.S~env.amp1$pH)))
+
+#Fig. 3e
+p2.1<-ggplot() + geom_jitter(data=env.amp1,  height = 0, aes(x= ko.mgm.S, y=bac.amp.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.amp1,aes(x= ko.mgm.S, y=bac.amp.S), method ="lm", col= "white")+
+  labs(x = "S.KO",y = "S.16S")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=8250,y=4200, label="R2 = 0.448\nP = 4.919e-06",
+           size=5,color="black")
+p2.1
+
+#ggsave("pdf/Fig.1b.corr.pH.H16S.2023.04.18.pdf", width = 4, height = 3)
+summary(lm(env.amp1$bac.amp.S~env.amp1$ko.mgm.S))
+shapiro.test(residuals(lm(env.amp1$bac.amp.S~env.amp1$ko.mgm.S)))
+
+#Fig. 3f
+p4.1<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= AGS2, y=ko.mgm.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= AGS2, y=ko.mgm.S), method = "lm",col= "white")+
+  labs(x = "Average Genome Size (Mbp)",y = "S.KO")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=6,y=7600, label="R2 = 0.247\nP = 0.001",
+           size=5,color="black")
+p4.1
+
+#ggsave("pdf2/Fig.2a.corr.pH.HKO.2022.12.29.pdf", width = 4, height = 3)
+
+summary(lm(env.genomeTraits$ko.mgm.S~env.genomeTraits$AGS2))
+shapiro.test(residuals(lm(env.genomeTraits$ko.mgm.S~env.genomeTraits$AGS2)))
+
+#Fig. 3g
+p6.1<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= AGS2, y=rgi.mgm.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= AGS2, y=rgi.mgm.S), method = "lm",col= "white")+
+  labs(x = "Average Genome Size (Mbp)",y = "S.ARG")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=6,y=700, label="R2 = 0.332\nP = 0.0001",
+           size=5,color="black")
+p6.1
+
+#ggsave("pdf2/Fig.2a.corr.pH.HKO.2022.12.29.pdf", width = 4, height = 3)
+
+summary(lm(env.genomeTraits$rgi.mgm.S~env.genomeTraits$AGS2))
+shapiro.test(residuals(lm(env.genomeTraits$rgi.mgm.S~env.genomeTraits$AGS2)))
+
+#Fig. 3h
+p8.1<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= AGS2, y=cazy.mgm.S, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= AGS2, y=cazy.mgm.S), method = "lm",col= "white")+
+  labs(x = "Average Genome Size (Mbp)",y = "S.Cazy")+
+  theme_bw()+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  theme(legend.title = element_text(colour="black", size=15, face="bold"),
+        legend.text = element_text(colour="black", size=15, face="bold"),
+        axis.text=element_text(size=15,face="bold"),
+        axis.title=element_text(size=15,face="bold"))+
+  annotate("text",x=6,y=100, label="R2 = 0.123\nP = 0.020",
+           size=5,color="black")
+p8.1
+#ggsave("pdf2/Fig.2a.corr.pH.HKO.2022.12.29.pdf", width = 4, height = 3)
+
+summary(lm(env.genomeTraits$cazy.mgm.S~env.genomeTraits$AGS2))
+shapiro.test(residuals(lm(env.genomeTraits$cazy.mgm.S~env.genomeTraits$AGS2)))
+
+```
+
+## R Markdown
+
+
