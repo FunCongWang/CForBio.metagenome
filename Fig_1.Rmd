@@ -54,6 +54,7 @@ ggdraw()+
 #ggsave("pdf2/Fig.S1.SampleSiteMap.2023.01.05.pdf", width = 12, height = 8.5)
 
 ```
+
 ```{r}
 #Fig.1b
 rm(list = ls())
@@ -80,60 +81,104 @@ cazy.mgm <- data.frame(t(cazy.mgm1))
 ################
 ###Ordination###
 #################
+#ordination
 library(ape)
 library(ggplot2)
 library(colorRamps)
 
+#bac.amplicon
+#calculate distance matrix
 set.seed(315)
-bac.amp.pc<-pcoa(vegdist(decostand(bac.amp,"hellinger"),"bray"))
-env.amp.pc<-data.frame(bac.amp.pc$vectors[,c("Axis.1", "Axis.2")], env.amp1)
-bac.amp.pc1=round(bac.amp.pc$values$Relative_eig[1], 3)*100
-bac.amp.pc2=round(bac.amp.pc$values$Relative_eig[2], 3)*100
+bac.amp.dist<-vegdist(bac.amp,method = 'bray')
+
+#cmdscale function
+bac.amp.pc<-cmdscale(bac.amp.dist,k=(nrow(bac.amp)-1),eig = TRUE)
+eig<-bac.amp.pc$eig
+bac.amp.pc1<-(eig[1]*100/sum(eig))
+bac.amp.pc2<-(eig[2]*100/sum(eig))
+
+#subset environmental data table
 env.sub <- env.amp1[, c("latitude","longitude","altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "soil_D","AllP_abu","AllP_bsa","AllP_rich")]; 
-colnames(env.sub) <-  c("Latitude","Longitude","Altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness")  
-ef<-envfit(bac.amp.pc$vectors, env.sub, na.rm = TRUE); ef
-bac.amp.ef.arrows<-data.frame(ef$vectors$arrows)
-bac.amp.ef.arrows$Variable <- row.names(bac.amp.ef.arrows)
-m1<-max(abs(env.amp.pc$Axis.1)); m2<-max(abs(env.amp.pc$Axis.2))
+colnames(env.sub) <-  c("Latitude","Longitude","Altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness")
 
-gp1<-ggplot(env.amp.pc) +
-  geom_point(mapping = aes(x = Axis.1, y = Axis.2, colour = site.latitude),size=3, alpha = 0.9) +
-  labs(x = sprintf("PCo1 (%.1f%%)", bac.amp.pc1), y = sprintf("PCo2 (%.1f%%)", bac.amp.pc2))+
+#envfit analysis
+ef<-envfit(bac.amp.pc,env.sub,permutations=999,na.rm=TRUE)
+ef
+
+#extract scores and add color var
+pcoa.scores.bact.amp<-data.frame(bac.amp.pc$points)[1:35]
+pcoa.scores.bact.amp$Site.latitude<-env.amp1$site.latitude
+m1<-max(abs(pcoa.scores.bact.amp$X1)); m2<-max(abs(pcoa.scores.bact.amp$X2))
+
+#extract envfit result
+en_coord_cont.bact.amp<-as.data.frame(scores(ef,"vectors"))*ordiArrowMul(ef)
+en_coord_cont.bact.amp
+en_coord_cont.bact.amp$envfactor<-rownames(en_coord_cont.bact.amp)
+
+p.bact = ggplot(data = pcoa.scores.bact.amp, aes(x = X1, y = X2)) + 
+  geom_point(size=5,mapping = aes(color=Site.latitude))+
   scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  geom_segment(aes(x = 0, y = 0, xend = Dim1*m1, yend = Dim2*m1),arrow = arrow(length = unit(0.02, "npc")),
+               data = en_coord_cont.bact.amp, size =0.6, colour = "grey")+
+  geom_text_repel(data = en_coord_cont.bact.amp, aes(x=Dim1*m1,y=Dim2*m1,label = envfactor),
+                  colour="black",size=3)+
   ggtitle("Bacteria.16S.Amplicon")+
-  geom_segment(data = bac.amp.ef.arrows, aes(x = 0, xend = Axis.1 * m1, y = 0, yend = Axis.2 * m2), arrow = arrow(length = unit(0.1, "cm")), colour = "grey") +
-  geom_text_repel(data = bac.amp.ef.arrows, aes(x = Axis.1 * m1, y = Axis.2 * m2, label = Variable),size = 3,colour="black")+theme(axis.title = element_text(color="black",face = "bold"),axis.text = element_text(color="black",face="bold"))+theme_bw()
+  labs(x = sprintf("PCo1 (%.1f%%)", bac.amp.pc1), y = sprintf("PCo2 (%.1f%%)", bac.amp.pc2))+
+  theme_bw()+theme(axis.text.x = element_text(size = 12,color = "black"),axis.title.x = element_text(size = 12,color = "black"),
+                   axis.text.y = element_text(size = 12,color = "black",),axis.title.y = element_text(size = 12,color = "black"),
+                   legend.title = element_text(size=12))
 
-gp1
+p.bact
 
 #Fig. 1c
+#ko.mgm
 set.seed(315)
-ko.mgm.pc<-pcoa(vegdist(decostand(ko.mgm,"hellinger"),"bray"))
-env.amp.pc<-data.frame(ko.mgm.pc$vectors[,c("Axis.1", "Axis.2")], env.amp1)
-ko.mgm.pc1=round(ko.mgm.pc$values$Relative_eig[1], 3)*100
-ko.mgm.pc2=round(ko.mgm.pc$values$Relative_eig[2], 3)*100
+ko.mgm.dist<-vegdist(ko.mgm,method = 'bray')
+
+#cmdscale function
+ko.mgm.pc<-cmdscale(ko.mgm.dist,k=(nrow(ko.mgm)-1),eig = TRUE)
+eig<-ko.mgm.pc$eig
+ko.mgm.pc1<-(eig[1]*100/sum(eig))
+ko.mgm.pc2<-(eig[2]*100/sum(eig))
+
+#subset environmental data table
 env.sub <- env.amp1[, c("latitude","longitude","altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "soil_D","AllP_abu","AllP_bsa","AllP_rich")]; 
-colnames(env.sub) <-  c("Latitude","Longitude","Altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness")  
-ef<-envfit(ko.mgm.pc$vectors, env.sub, na.rm = TRUE); ef
-ko.mgm.ef.arrows<-data.frame(ef$vectors$arrows)
-ko.mgm.ef.arrows$Variable <- row.names(ko.mgm.ef.arrows)
-m1<-max(abs(env.amp.pc$Axis.1)); m2<-max(abs(env.amp.pc$Axis.2))
+colnames(env.sub) <-  c("Latitude","Longitude","Altitude","MAP","MAT","TC","TN","TP","pH","ACa","AMg","AFe", "AK","C_N","C_P", "N_P", "Soil bulk density", "Plant abundance", "Plant basal area", "Plant richness")
 
-gp2<-ggplot(env.amp.pc) +
-  geom_point(mapping = aes(x = Axis.1, y = Axis.2, colour = site.latitude),size=3, alpha = 0.9) +
-  labs(x = sprintf("PCo1 (%.1f%%)", ko.mgm.pc1), y = sprintf("PCo2 (%.1f%%)", ko.mgm.pc2))+
+#envfit analysis
+ef<-envfit(ko.mgm.pc,env.sub,permutations=999,na.rm=TRUE)
+ef
+
+#extract scores and add color var
+pcoa.scores.ko.mgm<-data.frame(ko.mgm.pc$points)[1:35]
+pcoa.scores.ko.mgm$Site.latitude<-env.amp1$site.latitude
+m1<-max(abs(pcoa.scores.ko.mgm$X1)); m2<-max(abs(pcoa.scores.ko.mgm$X2))
+
+
+#extract envfit result
+en_coord_cont.ko.mgm<-as.data.frame(scores(ef,"vectors"))*ordiArrowMul(ef)
+en_coord_cont.ko.mgm
+en_coord_cont.ko.mgm$envfactor<-rownames(en_coord_cont.ko.mgm)
+
+p.ko.mgm = ggplot(data = pcoa.scores.ko.mgm, aes(x = X1, y = X2)) + 
+  geom_point(size=5,mapping = aes(color=Site.latitude))+
   scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
-  ggtitle("ko.mgm")+
-  geom_segment(data = ko.mgm.ef.arrows, aes(x = 0, xend = Axis.1 * m1, y = 0, yend = Axis.2 * m2), arrow = arrow(length = unit(0.1, "cm")), colour = "grey") +
-  geom_text_repel(data = ko.mgm.ef.arrows, aes(x = Axis.1 * m1, y = Axis.2 * m2, label = Variable),size = 3)+theme(axis.title = element_text(color="black",face = "bold"),axis.text = element_text(color="black",face="bold"))+theme_bw()
+  geom_segment(aes(x = 0, y = 0, xend = Dim1*m1, yend = Dim2*m2),arrow = arrow(length = unit(0.02, "npc")),
+               data = en_coord_cont.ko.mgm, size =0.6, colour = "grey")+
+  geom_text_repel(data = en_coord_cont.ko.mgm, aes(x=Dim1*m1,y=Dim2*m2,label = envfactor),
+                  colour="black",size=3)+
+  ggtitle("KO.Metagenome")+
+  labs(x = sprintf("PCo1 (%.1f%%)", ko.mgm.pc1), y = sprintf("PCo2 (%.1f%%)", ko.mgm.pc2))+
+  theme_bw()+theme(axis.text.x = element_text(size = 12,color = "black"),axis.title.x = element_text(size = 12,color = "black"),
+                   axis.text.y = element_text(size = 12,color = "black",),axis.title.y = element_text(size = 12,color = "black"),
+                   legend.title = element_text(size=12))
+p.ko.mgm
 
-gp2
-
-#Fig. 1d
 ```
 
 
 ```{r fig.height=12, fig.width=12}
+#Fig. 1d
 rm(list = ls())
 
 library(vegan)
@@ -187,10 +232,12 @@ p15<-ggplot(da.sl0, aes(x = ph.sample, y = Relative_Abundance, fill= Phylum)) +
         legend.title = element_text(colour="black", size=20, face="bold"),
         legend.text = element_text(colour="black", size=20, face="bold"),
         axis.text.y=element_text(colour="black",size=20,face="bold"),
-        axis.text.x=element_text(colour= blue2red(36),size=18,face="bold",angle = 90,hjust = 1,vjust = 0.5),
+        axis.text.x=element_text(colour= colorRampPalette(c("red","blue"))(36),size=18,face="bold",angle = 90,hjust = 1,vjust = 0.5),
         axis.title=element_text(colour="black",size=20,face="bold"))
 p15
-#ggsave("pdf/Fig.4A.Barplot.2022.12.29.pdf", width = 12, height = 12)
+#ggsave("pdf/Fig.1d.Barplot.2022.12.29.pdf", width = 12, height = 12)
+
+
 ```
 
 

@@ -55,60 +55,60 @@ env.amp1$ko.mgm.sum <- rowSums(ko.mgm)
 env.amp1$bac.mgm.sum <- rowSums(bac.mgm)
 
 #genomeTraits
-genomeTrait<-read_excel("data/genomeTrait/genomeTraits_contigs500.xlsx",sheet = "Sheet1")
+genomeTrait<-read_excel("data/genomeTrait/genomesize.contigsprok/genomesize_novirus/all_genomesize.novirus.xlsx",sheet = "Sheet2")
 
 genomeTrait$sample_name == env.amp1$sample_name
 
-env.genomeTraits<-cbind(env.amp1,genomeTrait[,c(3:18)])
+env.genomeTraits<-cbind(env.amp1,genomeTrait[,c(2:8)])
 
 #Fig.2a
-summary(lm(env.genomeTraits$AGS2~env.genomeTraits$pH))
-shapiro.test(residuals(lm(env.genomeTraits$AGS2~env.genomeTraits$pH)))
+summary(lm(env.genomeTraits$AGS~env.genomeTraits$pH))
+shapiro.test(residuals(lm(env.genomeTraits$AGS~env.genomeTraits$pH)))
 
-p11<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=AGS2, color = site.latitude), alpha = 0.8, size =5) + 
-  geom_smooth(data=env.genomeTraits,aes(x= pH, y=AGS2), method ="lm", col= "white")+
+p11<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=AGS, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= pH, y=AGS), method ="lm", col= "white")+
   labs(x = "pH",y = "Average Genome Size (Mbp)")+
   theme_bw()+
-  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"),name="Site.latitude")+
   theme(legend.title = element_text(colour="black", size=12, face="bold"),
         legend.text = element_text(colour="black", size=12, face="bold"),
         axis.text=element_text(size=12,face="bold"),
         axis.title=element_text(size=12,face="bold"))+
-  annotate("text",x=6.5,y=6, label="R2 = 0.401\nP = 2.033e-05",
+  annotate("text",x=6.5,y=6, label="R2 = 0.4228\nP = 1.062e-05",
            size=5,color="black")
 p11
 
 #Fig.2b
-summary(lm(env.genomeTraits$GC_all~env.genomeTraits$pH))
-shapiro.test(residuals(lm(env.genomeTraits$GC_all~env.genomeTraits$pH)))
+summary(lm(env.genomeTraits$GC_percent~env.genomeTraits$pH))
+shapiro.test(residuals(lm(env.genomeTraits$GC_percent~env.genomeTraits$pH)))
 
-p12<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=GC_all, color = site.latitude), alpha = 0.8, size =5) + 
-  geom_smooth(data=env.genomeTraits,aes(x= pH, y=GC_all), method ="lm", col= "white")+
+p12<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=GC_percent, color = site.latitude), alpha = 0.8, size =5) + 
+  geom_smooth(data=env.genomeTraits,aes(x= pH, y=GC_percent), method ="lm", col= "white")+
   labs(x = "pH",y = "GC Content (%)")+
   theme_bw()+
-  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"),name="Site.latitude")+
   theme(legend.title = element_text(colour="black", size=12, face="bold"),
         legend.text = element_text(colour="black", size=12, face="bold"),
         axis.text=element_text(size=12,face="bold"),
         axis.title=element_text(size=12,face="bold"))+
-  annotate("text",x=6.5,y=59, label="R2 = 0.392\nP = 2.627e-05",
+  annotate("text",x=6.5,y=59, label="R2 = 0.1461\nP = 0.01232",
            size=5,color="black")
 p12
 
 #Fig.3c
-summary(lm(env.genomeTraits$ACN8~env.genomeTraits$pH))
-shapiro.test(residuals(lm(env.genomeTraits$ACN8~env.genomeTraits$pH)))
+summary(lm(env.genomeTraits$ACN~env.genomeTraits$pH))
+shapiro.test(residuals(lm(env.genomeTraits$ACN~env.genomeTraits$pH)))
 
-p13<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=ACN8, color = site.latitude), alpha = 0.8, size =5) + 
-  geom_smooth(data=env.genomeTraits,aes(x= pH, y=ACN8), method ="lm", col= "white")+
+p13<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=ACN, color = site.latitude), alpha = 0.8, size =5) + 
+  #geom_smooth(data=env.genomeTraits,aes(x= pH, y=ACN), method ="lm", col= "white")+
   labs(x = "pH",y = "Average 16S Copy Number")+
   theme_bw()+
-  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"),name="Site.latitude")+
   theme(legend.title = element_text(colour="black", size=12, face="bold"),
         legend.text = element_text(colour="black", size=12, face="bold"),
         axis.text=element_text(size=12,face="bold"),
         axis.title=element_text(size=12,face="bold"))+
-  annotate("text",x=6.5,y=15, label="R2 = 0.09\nP = 0.0393",
+  annotate("text",x=6.5,y=15, label="R2 = 0.0625\nP = 0.07657",
            size=5,color="black")
 p13
 
@@ -117,17 +117,27 @@ summary(lm(log(env.genomeTraits$Growthrate)~env.genomeTraits$pH))
 shapiro.test(residuals(lm(log(env.genomeTraits$Growthrate)~env.genomeTraits$pH)))
 
 p14<-ggplot() + geom_jitter(data=env.genomeTraits,  height = 0, aes(x= pH, y=Growthrate, color = site.latitude), alpha = 0.8, size =5) + 
-  geom_smooth(data=env.genomeTraits,aes(x= pH, y=Growthrate), method ="lm", col= "white")+
+  #geom_smooth(data=env.genomeTraits,aes(x= pH, y=Growthrate), method ="lm", col= "white")+
   labs(x = "pH",y = "Minimal Doubling Time (hours)")+
   theme_bw()+
-  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"))+
+  scale_colour_manual(values= c(blue2red(15)[1:5], blue2red(17)[11:15], "green", "black"),name="Site.latitude")+
   theme(legend.title = element_text(colour="black", size=12, face="bold"),
         legend.text = element_text(colour="black", size=12, face="bold"),
         axis.text=element_text(size=12,face="bold"),
         axis.title=element_text(size=12,face="bold"))+
-  annotate("text",x=6.5,y=4, label="R2 = 0.014\nP = 0.489",
+  annotate("text",x=6.5,y=4, label="R2 = 0.014\nP = 0.4895",
            size=5,color="black")
 p14
+```
+
+
+```{r fig.height=3.5, fig.width=16}
+library(ggpubr)
+ggarrange(p11,p13,p12,p14,
+          ncol = 4,nrow = 1,widths=c(1,1),heights=c(1,1),common.legend = TRUE,legend = "right",
+          labels = c("a","b","c","d"))
+
+#ggsave("pdf/Fig.2_genometraits.pdf",plot = last_plot(),units = "in",height = 3.5,width = 16,dpi = 600)
 
 
 ```

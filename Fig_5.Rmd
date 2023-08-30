@@ -66,9 +66,9 @@ library(splitstackshape)
 
 cor.out<-cSplit(cor.out, "Y", "_")
 
-cor.out$Y_4 <- factor(cor.out$Y_4, levels = c("Carbon.cycle","Nitrogen.cycle","Sulfur.cycle","Iron.cycle","Phosphorus.cycle"))
+cor.out$Y_4 <- factor(cor.out$Y_4, levels = c("Carbon.cycle","Nitrogen.cycle","Phosphorus.cycle","Sulfur.cycle","Iron.cycle"))
 
-cor.out$Y_4 <- factor(cor.out$Y_4, labels  = c("Carbon.cycle","Nitrogen.cycle","Sulfur.cycle","Iron.cycle","Phosphorus.cycle"  ))
+cor.out$Y_4 <- factor(cor.out$Y_4, labels  = c("Carbon.cycle","Nitrogen.cycle","Phosphorus.cycle","Sulfur.cycle","Iron.cycle"))
 
 cor.out.sig <-cor.out
 cor.out.sig$r[cor.out.sig$p > 0.05] <- 0
@@ -77,14 +77,17 @@ ggplot(cor.out.sig, aes(Y_5,X)) +
   facet_grid(.~ Y_4,  scales = "free", space = "free" )+ 
   geom_tile(aes(fill = r), size=1)+
   geom_text(data=  cor.out.sig[cor.out.sig$r!=0,], aes(label = r), size = 2, font="bold")+
-  scale_fill_gradient(guide = "legend", high='green', low='blue',name="rho")+
-  geom_hline(yintercept = c(8.5,9.5), color = "red")+
+  #scale_fill_gradient(guide = "legend", high='green', low='blue',name="rho")+
+  scale_fill_gradient2(guide = "legend", high='#2c7bb6',mid="white", low='#d7191c',name="rho")+
+  geom_hline(yintercept = c(8.5,9.5), color = "orange")+
   theme(strip.text = element_text(size = 12,face="bold", color = c("white")),
         strip.background = element_rect(fill = "blue"),
         panel.spacing = unit(0.1, "lines"),
         axis.title= element_blank(),
         axis.text.x=element_text(colour="black", size=10, face="bold",angle = 90,hjust = 1,vjust = 0.5),
         axis.text.y=element_text(colour="black", size=12, face="bold"))
+
+#ggsave("pdf/Fig.5.corrHeatmap.env.C.N.P.S.Fe.cycle.2023.08.24.pdf", width = 22, height = 7)
 
 
 ```

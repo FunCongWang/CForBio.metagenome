@@ -5,7 +5,7 @@ date: "2023-06-20"
 output: html_document
 ---
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #Fig.3A
 rm(list = ls())
 library(igraph)
@@ -39,7 +39,10 @@ set.seed(123)
 plot(g, layout = layout_with_kk, edge.width=0.07,edge.color="grey", vertex.frame.color=NA,vertex.label=NA,edge.lty=1,
      edge.curved=T,vertex.size=1,margin=c(0, 0,0,0))
 #dev.off()
+```
 
+
+```{r message=FALSE, warning=FALSE}
 #Fig.3B
 rm(list = ls())
 library(vegan)
@@ -118,7 +121,7 @@ r.squaredGLMM(lme0)
 ```
 
 
-```{r fig.height=3.5, fig.width=4}
+```{r fig.height=3.5, fig.width=4,message=FALSE, warning=FALSE}
 #Fig.3D-E
 rm(list = ls())
 
@@ -209,7 +212,7 @@ ggplot( dataset, aes(x = logFC, y = -log10(PValue), colour=sig)) +
 ```
 
 
-```{r fig.height=4, fig.width=21}
+```{r fig.height=4, fig.width=21,message=FALSE, warning=FALSE}
 #Fig.3F
 rm(list = ls())
 load("data/CForBio.data.prep.2022.11.22.RData")
@@ -279,13 +282,14 @@ cor.out$Y_4 <- factor(cor.out$Y_4, levels = c("Bacterial.secretion.system","Cell
                                               "Energy.metabolism","Membrane.transport","Citrate.cycle","Glyoxylate.and.dicarboxylate.metabolism","Metabolism.of.other.amino.acids"))
 
 cor.out$Y_4 <- factor(cor.out$Y_4,labels = c("BSS","CM","XenoBDM","Two component system","MTP","GBM","PM",
-                                             "Energy metabolism","Membrane transport","CC","GDM","MAC"))
+                                             "Energy metabolism","Membrane transport","CC","GDM","MAA"))
 
 p<- ggplot(cor.out, aes(Y_1,X)) +
   facet_grid(.~ Y_4,  scales = "free", space = "free" )+
   geom_tile(aes(fill = r), size=0)+
-  geom_hline(yintercept = c(8.5,9.5), color = "red")+
-  scale_fill_gradient(guide = "legend", high='green', low='blue',name="rho")+
+  geom_hline(yintercept = c(8.5,9.5), color = "yellow")+
+  #scale_fill_gradient(guide = "legend", high='green', low='blue',name="rho")+
+  scale_fill_gradient2(guide = "legend", high='#2c7bb6',mid="white", low='#d7191c',name="rho")+
   theme(strip.text = element_text(size = 10,face="bold", color = c("white")),
         strip.background = element_rect(fill = "red"),
         panel.spacing = unit(0.1, "lines"),
@@ -293,7 +297,7 @@ p<- ggplot(cor.out, aes(Y_1,X)) +
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank(),
         axis.text.y=element_text(colour="black", size=10, face="bold"))
-#p
+p
 
 g <- ggplot_gtable(ggplot_build(p))
 strips <- which(grepl('strip-', g$layout$name))
@@ -306,12 +310,11 @@ for (i in seq_along(strips)) {
   g$grobs[[strips[i]]]$grobs[[1]]$children[[k]]$gp$fill <- fills[i]
 }
 
-#pdf("pdf/Fig.3F.Heatmap.KEGG.level2.all.2022.12.29.pdf", width = 24, height = 4)
+#pdf("pdf/Fig.3F.Heatmap.KEGG.level3.all.2022.12.29.pdf", width = 24, height = 4)
 
 plot(g)
 
 #dev.off()
-
 
 ```
 
